@@ -1,0 +1,35 @@
+// Make sure to create a data directory in dba_directory table of the name data_dir_path
+// CREATE DIRECTORY directory_name AS 'data_dir_path';
+//GRANT READ, WRITE ON DIRECTORY data_dir_path TO user1;
+
+SET FEEDBACK OFF;
+SET SERVEROUTPUT ON;
+ALTER SESSION SET NLS_DATE_FORMAT = 'DD-MON-YYYY HH24:MI:SS';
+ALTER SESSION SET utl_file_dir='\\path\\to\\data\\dir' ;
+ALTER SESSION ENABLE PARALLEL DML;
+set tim on;
+
+
+DECLARE
+    v_file UTL_FILE.FILE_TYPE;
+    v_separator VARCHAR2(10) := ',';  
+    v_output_dir VARCHAR2(100) := 'data_dir_path' ; 
+    v_file_prefix VARCHAR2(100) := 'data'; 
+    v_file_extension VARCHAR2(10) := '.csv';
+	v_file_name VARCHAR2(50) :='';
+	v_date DATE;
+
+BEGIN	
+		select to_char(sysdate,'dd-mon-yy hh:mi:ss') into v_date from dual;
+		select v_file_prefix ||  v_file_extension into v_file_name from dual;
+		
+		 v_file := UTL_FILE.FOPEN(v_output_dir, v_file_name, 'W');
+            UTL_FILE.PUT_LINE(v_file, '"FIRST_NAME"' || v_separator ||'"SECOND_NAME"' || v_separator || '"EMAIL"' || v_separator || '"PHONE"'  );	
+			
+		FOR r IN (select FIRST_NAME, SECOND_NAME, EMAIL, PHONE as rvalue from employees where dept IN ('IT') AND SALARY_LEVEL=2 AND INSERT_TIME >= (TRUNC(SYSDATE) - 14)) LOOP     
+				UTL_FILE.PUT_LINE(v_file, r.FIRST_NAME || v_separator || r.SECOND_NAME || v_separator || r.EMAIL || v_separator || r.PHONE );
+            END LOOP;
+			
+			
+END;
+/
